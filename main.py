@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 import uvicorn
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 from pydantic import BaseModel
+from statistics import mode
 
 
 app = FastAPI()
@@ -14,8 +15,7 @@ class EntityIn(BaseModel):
 
 
 class EntityOut(BaseModel):
-    labels : list
-
+    label : str
 
 
 @app.get("/")
@@ -59,12 +59,18 @@ async def read_root(request: EntityIn, model=model, tokenizer=tokenizer, label_d
     predictions = outputs.logits.argmax(-1)
     out_codes = predictions.tolist()
     out_labels = {'labels':[]}
+    most_common_label = {}
     for code in out_codes:
         out_labels['labels'].append(label_dict[code])
 
+    try :
+        most_common_label['label'] = mode(out_labels['labels'])
+    except:
+        most_common_label['label'] = out_labels['labels'][0]
+
     
 
-    return out_labels
+    return most_common_label
     
 
 
