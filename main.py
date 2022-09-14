@@ -74,5 +74,3 @@ async def read_root(request: EntityIn, model=model, tokenizer=tokenizer, label_d
     
 
 
-
-
