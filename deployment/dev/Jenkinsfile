@@ -1,0 +1,102 @@
+def COLOR_MAP = [
+    'SUCCESS': 'good',
+    'FAILURE': 'danger',
+]
+pipeline {
+    agent {
+        label 'spot_builder'
+    }
+    environment{
+        REGISTRY            = "728291931126.dkr.ecr.ap-south-1.amazonaws.com/bertgenreidentification-service"
+        REGISTRY_CREDENTIAL = 'ecr-credentials'
+
+        IMAGE_TYPE      = 'dev'
+        GIT_HASH        = GIT_COMMIT.take(7)
+        APP_IMAGE_TAG   = "v${BUILD_NUMBER}-${GIT_HASH}-${IMAGE_TYPE}"
+        NGINX_IMAGE_TAG = "v${BUILD_NUMBER}-${GIT_HASH}-nginx-${IMAGE_TYPE}"
+
+        BUILD_ENV       ="dev"
+        CLUSTER_NAME    ="ecs-cluster"
+        SERVICE_NAME    ="bertgenreidentification-${BUILD_ENV}-service"
+        TASK_FAMILY     ="bertgenreidentification-${BUILD_ENV}-task"
+    }
+    stages {
+        stage('Pull Code') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Build NGINX Image') {
+            steps {
+                withCredentials(bindings: [
+                    sshUserPrivateKey(
+                      credentialsId: 'bitbucket-credentials', 
+                      keyFileVariable: 'SSH_KEY_BITBUCKET'
+                    ),
+                ]) {
+                    script {
+                      nginx_image = docker.build(REGISTRY  + ":" + NGINX_IMAGE_TAG, "--build-arg SSH_PRIVATE_KEY='" + readFile(SSH_KEY_BITBUCKET) + " \\' -f deployment/${BUILD_ENV}//Dockerfile-Nginx .")                   
+                    }
+                }
+            }
+        }        
+        stage('Build App Image') {
+            steps {
+                withCredentials(bindings: [
+                    sshUserPrivateKey(
+                      credentialsId: 'bitbucket-credentials', 
+                      keyFileVariable: 'SSH_KEY_BITBUCKET'
+                    ),
+                ]) {
+                    script {
+                      app_image = docker.build(REGISTRY  + ":" + APP_IMAGE_TAG, "--build-arg SSH_PRIVATE_KEY='" + readFile(SSH_KEY_BITBUCKET) + " \\' -f deployment/${BUILD_ENV}//Dockerfile .")                   
+                    }
+                }
+            }
+        }
+        stage('Push NGINX Image') {
+            steps {
+                script {
+                    docker.withRegistry(
+                      'https://728291931126.dkr.ecr.ap-south-1.amazonaws.com', 
+                      'ecr:ap-south-1:ecr-credentials') {
+                       nginx_image.push(NGINX_IMAGE_TAG)
+                }
+                sh '''
+                  docker rmi ${REGISTRY}:${NGINX_IMAGE_TAG}
+                '''                
+                }
+            }
+        }
+        stage('Push App Image') {
+            steps {
+                script {
+                    docker.withRegistry(
+                      'https://728291931126.dkr.ecr.ap-south-1.amazonaws.com', 
+                      'ecr:ap-south-1:ecr-credentials') {
+                       app_image.push(APP_IMAGE_TAG)
+                }
+                sh '''
+                  docker rmi ${REGISTRY}:${APP_IMAGE_TAG}
+                '''               
+                }
+            }
+        }        
+        stage('Deploy Image'){
+            steps{
+                sh '''
+                   sed -e "s;%APP_IMAGE_TAG%;${APP_IMAGE_TAG};g" -e "s;%NGINX_IMAGE_TAG%;${NGINX_IMAGE_TAG};g"  deployment/${BUILD_ENV}/${TASK_FAMILY}.json > deployment/${BUILD_ENV}/${TASK_FAMILY}-${GIT_HASH}.json
+                   aws ecs register-task-definition --family ${TASK_FAMILY} --cli-input-json file://deployment/${BUILD_ENV}/${TASK_FAMILY}-${GIT_HASH}.json
+
+                   TASK_REVISION=`aws ecs describe-task-definition --task-definition ${TASK_FAMILY} | egrep "revision" | tr "/" " " | awk '{print $2}' | sed 's/,//'`
+                   DESIRED_COUNT=`aws ecs describe-services --cluster  ${CLUSTER_NAME} --services  ${SERVICE_NAME} | egrep "desiredCount" | tr "/" " " | awk '{print $2}'| sed 's/,//' | head -n 1`
+                   if [ ${DESIRED_COUNT} = "0" ]; then
+                        DESIRED_COUNT="1"
+                   fi
+                   aws ecs update-service --cluster ${CLUSTER_NAME} --service ${SERVICE_NAME} --task-definition ${TASK_FAMILY}:${TASK_REVISION} --desired-count ${DESIRED_COUNT}
+                   rm deployment/${BUILD_ENV}/${TASK_FAMILY}-${GIT_HASH}.json
+                   '''
+            }
+        }
+    }
+}
