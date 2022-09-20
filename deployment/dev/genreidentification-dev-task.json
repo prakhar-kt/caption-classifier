@@ -1,5 +1,5 @@
 {
-    "family": "bertgenreidentification-service-dev-task",
+    "family": "genreidentification-service-dev-task",
     "networkMode": "awsvpc",
     "requiresCompatibilities": [
       "FARGATE"
@@ -9,8 +9,8 @@
     "memory": "4096",
     "containerDefinitions": [
       {
-        "name": "bertgenreidentification-service-dev-task",
-        "image": "728291931126.dkr.ecr.ap-south-1.amazonaws.com/bertgenreidentification-service:%APP_IMAGE_TAG%",
+        "name": "genreidentification-service-dev-task",
+        "image": "728291931126.dkr.ecr.ap-south-1.amazonaws.com/genreidentification-service:%APP_IMAGE_TAG%",
         "portMappings": [
           {
             "hostPort": 3004,
@@ -22,7 +22,7 @@
         "essential": true,
         "secrets": [
           {         
-            "valueFrom": "arn:aws:ssm:ap-south-1:728291931126:parameter/dev/bertgenreidentification-service/APP_PORT",
+            "valueFrom": "arn:aws:ssm:ap-south-1:728291931126:parameter/dev/genreidentification-service/APP_PORT",
             "name": "APP_PORT"
           }
         ],
@@ -30,7 +30,7 @@
           "logDriver": "awslogs",
           "options": {
             "awslogs-create-group": "true",
-            "awslogs-group": "/ecs/bertgenreidentification-service-dev-task",
+            "awslogs-group": "/ecs/genreidentification-service-dev-task",
             "awslogs-region": "ap-south-1",
             "awslogs-stream-prefix": "ecs"
           }
@@ -38,7 +38,7 @@
       },
       {
         "name": "nginx",
-        "image": "728291931126.dkr.ecr.ap-south-1.amazonaws.com/bertgenreidentification-service:%NGINX_IMAGE_TAG%",
+        "image": "728291931126.dkr.ecr.ap-south-1.amazonaws.com/genreidentification-service:%NGINX_IMAGE_TAG%",
         "portMappings": [
           {
             "hostPort": 80,
@@ -52,7 +52,7 @@
           "logDriver": "awslogs",
           "options": {
             "awslogs-create-group": "true",
-            "awslogs-group": "/ecs/bertgenreidentification-service-dev-task",
+            "awslogs-group": "/ecs/genreidentification-service-dev-task",
             "awslogs-region": "ap-south-1",
             "awslogs-stream-prefix": "ecs"
           }
