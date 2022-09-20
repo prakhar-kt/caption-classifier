@@ -12,7 +12,6 @@ COPY requirements.txt /usr/src/app/
 RUN pip3 install 'uvicorn[standard]'
 RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
 
-
 # Copy source code 
 COPY . /usr/src/app
 
