@@ -7,7 +7,7 @@ pipeline {
         label 'spot_builder'
     }
     environment{
-        REGISTRY            = "728291931126.dkr.ecr.ap-south-1.amazonaws.com/bertgenreidentification-service"
+        REGISTRY            = "728291931126.dkr.ecr.ap-south-1.amazonaws.com/genreidentification-service"
         REGISTRY_CREDENTIAL = 'ecr-credentials'
 
         IMAGE_TYPE      = 'dev'
@@ -17,8 +17,8 @@ pipeline {
 
         BUILD_ENV       ="dev"
         CLUSTER_NAME    ="ecs-cluster"
-        SERVICE_NAME    ="bertgenreidentification-${BUILD_ENV}-service"
-        TASK_FAMILY     ="bertgenreidentification-${BUILD_ENV}-task"
+        SERVICE_NAME    ="genreidentification-${BUILD_ENV}-service"
+        TASK_FAMILY     ="genreidentification-${BUILD_ENV}-task"
     }
     stages {
         stage('Pull Code') {
