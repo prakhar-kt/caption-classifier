@@ -12,6 +12,7 @@ RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
 # Copy source code 
 COPY . /usr/src/app
 
-EXPOSE 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000
+
+ENTRYPOINT  ["gunicorn", "--bind=0.0.0.0:8000", "app:app"]
