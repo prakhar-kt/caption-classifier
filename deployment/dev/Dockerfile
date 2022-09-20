@@ -1,5 +1,5 @@
 # Docker base image
-FROM python:3.9
+FROM python:3.9-slim-buster
 
 # Working directory
 WORKDIR /usr/src/app
