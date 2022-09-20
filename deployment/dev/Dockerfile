@@ -5,6 +5,8 @@ FROM python:3.9-slim-buster
 WORKDIR /usr/src/app
 
 # Installing python dependencies
+RUN  apt-get update && \
+     apt-get install -y git
 COPY requirements.txt /usr/src/app/
 
 RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
